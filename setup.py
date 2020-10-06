@@ -4,9 +4,9 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name="pyconfig", # Replace with your own username
+    name="pyconfig",
     version="0.0.1",
-    author="Philipp Gölter",
+    author="pgoelter",
     author_email="author@example.com",
     description="Tool to manage configuration with .json files.",
     long_description=long_description,
