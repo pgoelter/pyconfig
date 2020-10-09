@@ -4,7 +4,7 @@ Provides a possibility to hold project configurations. Similar to js library con
 
 # Usage
 1. Create configuration file with json syntax and store it as **config.json**:  
-```
+```json
 {
   "_comment": "This file should serve as an example.",
   "api": {
@@ -23,7 +23,7 @@ Provides a possibility to hold project configurations. Similar to js library con
 ```
 
 2. Load the configuration with the Config object:  
-``` 
+```python 
 import pyconfig as conf
 
 my_config = config.from_json_file(filename='config.json', project_name='My Awesome Project)
