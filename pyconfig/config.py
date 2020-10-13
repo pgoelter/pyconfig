@@ -5,7 +5,7 @@ from copy import deepcopy
 from functools import reduce
 
 class Config(object):
-    """Configuration object. Can hold config settings based on a json file.
+    """Singleton Configuration object. Can hold config settings based on a json file.
     """
 
     def __init__(self, defaults: dict, project_name: str = None):
@@ -15,9 +15,19 @@ class Config(object):
             defaults (dict): Configuration settings
             project_name (str, optional): Project name. Defaults to None.
         """
+        super().__init__()
+        if defaults is None:
+            defaults = {}
+            
         self.defaults = deepcopy(defaults)
         self._defaults = deepcopy(defaults)
         self.project_name = project_name
+        
+        # Make sure only one instance of a Config object can be created.
+        if Config.__instance__ is None:
+            Config.__instance__ = self
+        else:
+            raise Exception("You cannot create another Singleton class")
 
     @classmethod
     def from_json_file(cls, filename: str, project_name: str = None):
@@ -75,6 +85,14 @@ class Config(object):
         """Reset Config instance to default values.
         """
         self.defaults = self._defaults
+
+    @staticmethod
+    def get_instance():
+        """ Static method to fetch the current instance.
+        """
+        if not Config.__instance__:
+            Config()
+        return Config.__instance__
 
     def __repr__(self):
         return {"project_name": self.project_name, 'config': self.defaults}
