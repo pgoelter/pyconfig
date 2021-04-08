@@ -4,11 +4,12 @@ import operator
 from copy import deepcopy
 from functools import reduce
 
+
 class Config(object):
     """Singleton Configuration object. Can hold config settings based on a json file.
     """
 
-    def __init__(self, defaults: dict, project_name: str = None):
+    def __init__(self, defaults: dict = None, project_name: str = None):
         """Initialize a Config object which stores configuration settings as a dict attribute.
 
         Args:
@@ -18,11 +19,11 @@ class Config(object):
         super().__init__()
         if defaults is None:
             defaults = {}
-            
+
         self.defaults = deepcopy(defaults)
         self._defaults = deepcopy(defaults)
         self.project_name = project_name
-        
+
         # Make sure only one instance of a Config object can be created.
         if Config.__instance__ is None:
             Config.__instance__ = self
@@ -47,11 +48,11 @@ class Config(object):
 
         return cls(defaults=defaults, project_name=project_name)
 
-    def get(self, route: str=None):
+    def get(self, route: str = None):
         """Get specific key from the config object.
         Nested keys can be accessed by passing a sequence of keys as follows:
             route='route.to.nested.key'
-            
+
         Args:
             route (str): A single key or a sequence of keys.
 
@@ -80,7 +81,6 @@ class Config(object):
             dic = dic.setdefault(key, {})
         dic[keys[-1]] = value
 
-    
     def reset_config(self):
         """Reset Config instance to default values.
         """
@@ -91,7 +91,7 @@ class Config(object):
         """ Static method to fetch the current instance.
         """
         if not Config.__instance__:
-            Config()
+            Config.__instance__ = Config()
         return Config.__instance__
 
     def __repr__(self):
@@ -99,4 +99,3 @@ class Config(object):
 
     def __str__(self):
         return f"Config(project_name={self.project_name},defaults={str(self.defaults)})"
-
