@@ -1,4 +1,4 @@
-[![Actions Status](https://github.com/pgoelter/pyconfig/workflows/Build/badge.svg)](https://github.com/pgoelter/pyconfig/actions)
+[![Pytest and Lint](https://github.com/pgoelter/pyconfig/actions/workflows/main.yml/badge.svg?branch=main)](https://github.com/pgoelter/pyconfig/actions/workflows/main.yml)
 
 # pyconfig
 
