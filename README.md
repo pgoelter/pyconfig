@@ -1,29 +1,33 @@
+[![Actions Status](https://github.com/pgoelter/pyconfig/workflows/Build/badge.svg)](https://github.com/pgoelter/pyconfig/actions)
+
 # pyconfig
+
 Provides a possibility to hold project configurations. Similar to js library conf.
 
-
 # Usage
-1. Create configuration file with json syntax and store it as **config.json**:  
+
+1. Create configuration file with json syntax and store it as **config.json**:
+
 ```json
 {
   "_comment": "This file should serve as an example.",
   "api": {
     "authentification": {
-        "email": "YOURMAILADDRESS",
-        "password": "YOURPASSWORD",
-        "ssl_certificate": "PATHTOCERT",
-        "routes": {
-            "base": "BASEURL",
-            "login": "LOGINURL",
-        }
-    },
+      "email": "YOURMAILADDRESS",
+      "password": "YOURPASSWORD",
+      "ssl_certificate": "PATHTOCERT",
+      "routes": {
+        "base": "BASEURL",
+        "login": "LOGINURL"
+      }
+    }
   }
 }
-
 ```
 
-2. Load the configuration with the Config object:  
-```python 
+2. Load the configuration with the Config object:
+
+```python
 import pyconfig as conf
 
 my_config = config.from_json_file(filename='config.json', project_name='My Awesome Project)
