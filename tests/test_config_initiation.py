@@ -13,6 +13,7 @@ def before():
 
 
 def test_create_empty_configuration_by_get_instance(empty_config_object_representation):
+    raise
     assert str(Config.get_instance()) == empty_config_object_representation
 
 
