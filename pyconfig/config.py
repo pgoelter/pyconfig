@@ -103,8 +103,5 @@ class Config(object):
             Config.__instance__ = Config()
         return Config.__instance__
 
-#    def __repr__(self):
-#        return {"project_name": self.project_name, 'config': self.defaults}
-
     def __str__(self):
         return f"Config(project_name={self.project_name}, defaults={str(self.defaults)})"
