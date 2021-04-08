@@ -8,6 +8,7 @@ from functools import reduce
 class Config(object):
     """Singleton Configuration object. Can hold config settings based on a json file.
     """
+    __instance__ = None
 
     def __init__(self, defaults: dict = None, project_name: str = None):
         """Initialize a Config object which stores configuration settings as a dict attribute.
@@ -47,6 +48,14 @@ class Config(object):
             defaults = json.load(fd)
 
         return cls(defaults=defaults, project_name=project_name)
+
+    @classmethod
+    def from_yml_file(cls, filename: str, project_name: str = None):
+        raise NotImplementedError
+
+    @classmethod
+    def from_toml_file(cls, filename: str, project_name: str = None):
+        raise NotImplementedError
 
     def get(self, route: str = None):
         """Get specific key from the config object.
@@ -94,8 +103,8 @@ class Config(object):
             Config.__instance__ = Config()
         return Config.__instance__
 
-    def __repr__(self):
-        return {"project_name": self.project_name, 'config': self.defaults}
+#    def __repr__(self):
+#        return {"project_name": self.project_name, 'config': self.defaults}
 
     def __str__(self):
-        return f"Config(project_name={self.project_name},defaults={str(self.defaults)})"
+        return f"Config(project_name={self.project_name}, defaults={str(self.defaults)})"
