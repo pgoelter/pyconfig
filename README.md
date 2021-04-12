@@ -47,7 +47,7 @@ An existing configuration can be modified as follows:
 ```python
 from pyconfig import Config
 
-config = Config.get_instance
+config = Config.get_instance()
 # Assuming the following configuration exists in the Config object (initial state):
 # {
 #   "root": {
