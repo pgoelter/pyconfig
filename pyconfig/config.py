@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 import json
+import yaml
+import toml
 import operator
 from copy import deepcopy
 from functools import reduce
@@ -54,11 +56,43 @@ class Config(object):
 
     @classmethod
     def from_yml_file(cls, filename: str, project_name: str = None):
-        raise NotImplementedError
+        """Create a Config instance that holds information from a yml file.
+
+        Args:
+            filename (str): The filename/path of the yml file.
+            project_name (str, optional): Specifies a project name. Defaults to None.
+
+        Returns:
+            Config: Returns an instance of the Config class.
+        """
+        defaults = None
+
+        with open(filename) as file:
+            # The FullLoader parameter handles the conversion from YAML
+            # scalar values to Python the dictionary format
+            defaults = yaml.load(file, Loader=yaml.FullLoader)
+
+        return cls(defaults=defaults, project_name=project_name)
 
     @classmethod
     def from_toml_file(cls, filename: str, project_name: str = None):
-        raise NotImplementedError
+        """Create a Config instance that holds information from a toml file.
+
+        Args:
+            filename (str): The filename/path of the toml file.
+            project_name (str, optional): Specifies a project name. Defaults to None.
+
+        Returns:
+            Config: Returns an instance of the Config class.
+        """
+        defaults = None
+
+        with open(filename) as file:
+            # The FullLoader parameter handles the conversion from YAML
+            # scalar values to Python the dictionary format
+            defaults = toml.load(file)
+
+        return cls(defaults=defaults, project_name=project_name)
 
     @throws_keyError
     def get(self, route: str = None):
