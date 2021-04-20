@@ -5,13 +5,14 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="pyconfig",
-    version="0.0.1",
+    version="0.1",
     author="pgoelter",
-    author_email="author@example.com",
-    description="Tool to manage configuration with .json files.",
+    author_email="pgoelter@gmail.com",
+    description="Python package to manage configuration with a globally available configuration object that follows \
+    the singleton pattern.",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/pypa/sampleproject",
+    url="https://github.com/pgoelter/pyconfig",
     packages=setuptools.find_packages(),
     classifiers=[
         "Programming Language :: Python :: 3",
