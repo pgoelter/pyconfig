@@ -4,6 +4,9 @@ import operator
 from copy import deepcopy
 from functools import reduce
 
+from pyconfig._decorators import throws_keyError
+from pyconfig.exceptions import SingleInstanceException
+
 
 class Config(object):
     """Singleton Configuration object. Can hold config settings based on a json file.
@@ -29,7 +32,7 @@ class Config(object):
         if Config.__instance__ is None:
             Config.__instance__ = self
         else:
-            raise Exception("You cannot create another Singleton class")
+            raise SingleInstanceException("You cannot create more than one instance!")
 
     @classmethod
     def from_json_file(cls, filename: str, project_name: str = None):
@@ -57,6 +60,7 @@ class Config(object):
     def from_toml_file(cls, filename: str, project_name: str = None):
         raise NotImplementedError
 
+    @throws_keyError
     def get(self, route: str = None):
         """Get specific key from the config object.
         Nested keys can be accessed by passing a sequence of keys as follows:
