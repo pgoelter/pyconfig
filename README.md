@@ -2,7 +2,7 @@
 
 # Pyconfig
 
-Small config library to provide a singleton instance configuration object. Allows loading an existing configuration from a file (.json, other in progress).
+Small config library to provide a singleton instance configuration object. Allows loading an existing configuration from a file (.json, .yml, .toml).
 
 # Functionality
 
