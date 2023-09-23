@@ -110,14 +110,14 @@ base_url = my_config.get("api.routes.base")
 
 
 # You can also create new keys like this:
-my_config.set("my.new.configuration", {'parameter_1': 1, 'parameter_2: 2})
+my_config.set("my.new.configuration", {'parameter_1': 1, 'parameter_2': 2})
 my_new_config = my_config.get("my.new.configuration")
 
 
 # Or like this:
 my_config.set("new.config.server_address", "http://localhost:8000/")
 
-server_address = my_config.get("new.config.server_address)
+server_address = my_config.get("new.config.server_address")
 
 
 ```
