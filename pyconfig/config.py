@@ -11,24 +11,34 @@ from pyconfig.exceptions import SingleInstanceException
 
 
 class Config(object):
-    """Singleton Configuration object. Can hold config settings based on a json file.
-    """
-    __instance__ = None
+"""Thread-safe Singleton Configuration object. Can hold config settings based on a json file."""
 
+    __instance__ = None
+    __lock = Lock()  # A lock object to ensure thread-safe access to the instance
+
+    def __new__(cls, *args, **kwargs):
+        with cls.__lock:
+            if cls.__instance__ is None:
+                cls.__instance__ = super(Config, cls).__new__(cls)
+        return cls.__instance__
+        
     def __init__(self, defaults: dict = None, project_name: str = None):
         """Initialize a Config object which stores configuration settings as a dict attribute.
+        This is only executed once.
 
         Args:
             defaults (dict): Configuration settings
             project_name (str, optional): Project name. Defaults to None.
         """
-        super().__init__()
-        if defaults is None:
-            defaults = {}
+        if not hasattr(self, 'is_initialized'):
+            super().__init__()
+            if defaults is None:
+                defaults = {}
 
-        self.defaults = deepcopy(defaults)
-        self._defaults = deepcopy(defaults)
-        self.project_name = project_name
+            self.defaults = deepcopy(defaults)
+            self._defaults = deepcopy(defaults)
+            self.project_name = project_name
+            self.is_initialized = True
 
         # Make sure only one instance of a Config object can be created.
         if Config.__instance__ is None:
