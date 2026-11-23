@@ -23,6 +23,17 @@ uv build                                    # sdist + wheel into dist/
 Dev tools are the `dev` dependency group, pinned in the committed `uv.lock`; after changing
 dependencies run `uv lock`. All tool config lives in `pyproject.toml` (build backend: hatchling).
 CI (`.github/workflows/main.yml`) runs `uv sync --locked`, ruff, mypy and pytest on Python 3.11–3.14.
+`main` is protected by a ruleset: changes only via PR, all four `test (3.x)` checks must pass.
+
+## Releasing
+
+1. Bump `__version__` in `tidyconf/__init__.py` (semver) in a PR and merge it.
+2. Create a GitHub release with tag `v<version>` on `main`, e.g.
+   `gh release create v1.1.0 --target main --generate-notes`.
+3. `.github/workflows/release.yml` checks that the tag matches `__version__`, builds and
+   publishes to PyPI via trusted publishing (environment `pypi`, no API token).
+
+PyPI versions are immutable: a published version can never be re-uploaded.
 
 ## Layout
 
