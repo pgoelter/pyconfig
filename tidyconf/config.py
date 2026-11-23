@@ -92,17 +92,27 @@ class Config:
         Raises:
             KeyNotFoundError: The route does not exist and no default was given.
         """
-        node: Any = self._data
-        for key in route.split("."):
-            if not isinstance(node, Mapping) or key not in node:
-                if default is _MISSING:
-                    raise KeyNotFoundError(f"Key '{route}' not found")
-                return default
-            node = node[key]
-        return copy.deepcopy(node)
+        value = self._lookup(route)
+        if value is _MISSING:
+            if default is _MISSING:
+                raise KeyNotFoundError(f"Key '{route}' not found")
+            return default
+        return copy.deepcopy(value)
 
     def __getitem__(self, route: str) -> Any:
         return self.get(route)
+
+    def __contains__(self, route: object) -> bool:
+        """Return whether a dotted route exists, e.g. `"database.port" in config`."""
+        return isinstance(route, str) and self._lookup(route) is not _MISSING
+
+    def _lookup(self, route: str) -> Any:
+        node: Any = self._data
+        for key in route.split("."):
+            if not isinstance(node, Mapping) or key not in node:
+                return _MISSING
+            node = node[key]
+        return node
 
     def set(self, route: str, value: Any) -> None:
         """Set the value at a dotted route, creating intermediate sections.
