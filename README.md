@@ -102,7 +102,7 @@ Relative paths are resolved against the current working directory, so building
 them from `__file__` as above keeps loading independent of where the app is started.
 
 A runnable version of this setup, a tiny web server, lives in
-[`examples/app.py`](examples/app.py): run `python examples/app.py` and try
+[`examples/app.py`](https://github.com/pgoelter/tidyconf/blob/main/examples/app.py): run `python examples/app.py` and try
 `HELLO_SERVER__PORT=9000`.
 
 ## API
@@ -189,8 +189,8 @@ variable, as does a route that runs through a non-mapping value.
 
 ## Development
 
-See [CLAUDE.md](CLAUDE.md) for setup, tests, linting and project conventions.
+See [CLAUDE.md](https://github.com/pgoelter/tidyconf/blob/main/CLAUDE.md) for setup, tests, linting and project conventions.
 
 ## License
 
-MIT, see [LICENSE](LICENSE).
+MIT, see [LICENSE](https://github.com/pgoelter/tidyconf/blob/main/LICENSE).
