@@ -26,6 +26,8 @@ classifiers = [
 
 [project.optional-dependencies]
 yaml = ["PyYAML>=6"]
+
+[dependency-groups]
 dev = ["pytest", "pytest-cov", "mypy", "ruff", "types-PyYAML", "PyYAML>=6"]
 
 [project.urls]
