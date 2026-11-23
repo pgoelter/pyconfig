@@ -30,8 +30,10 @@ CI (`.github/workflows/main.yml`) runs `uv sync --locked`, ruff, mypy and pytest
 1. Bump `__version__` in `tidyconf/__init__.py` (semver) in a PR and merge it.
 2. Create a GitHub release with tag `v<version>` on `main`, e.g.
    `gh release create v1.1.0 --target main --generate-notes`.
-3. `.github/workflows/release.yml` checks that the tag matches `__version__`, builds and
-   publishes to PyPI via trusted publishing (environment `pypi`, no API token).
+3. `.github/workflows/release.yml` checks that the tag matches `__version__`, builds with
+   `uv build` and uploads with `pypa/gh-action-pypi-publish` via trusted publishing
+   (environment `pypi`, no API token). That action also attaches signed PEP 740 provenance
+   attestations; `uv publish` cannot generate them, so don't switch back to it.
 
 PyPI versions are immutable: a published version can never be re-uploaded.
 
