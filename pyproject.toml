@@ -48,7 +48,7 @@ addopts = "--cov=tidyconf --cov-report=term-missing --cov-fail-under=90"
 
 [tool.mypy]
 strict = true
-files = ["tidyconf", "tests"]
+files = ["tidyconf", "tests", "examples"]
 
 [tool.ruff]
 line-length = 88

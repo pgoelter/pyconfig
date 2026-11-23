@@ -101,6 +101,10 @@ def run() -> None:
 Relative paths are resolved against the current working directory, so building
 them from `__file__` as above keeps loading independent of where the app is started.
 
+A runnable version of this setup, a tiny web server, lives in
+[`examples/app.py`](examples/app.py): run `python examples/app.py` and try
+`HELLO_SERVER__PORT=9000`.
+
 ## API
 
 ```python
