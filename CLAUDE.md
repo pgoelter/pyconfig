@@ -30,6 +30,7 @@ runs ruff, mypy and pytest on Python 3.11–3.14.
 - `tidyconf/exceptions.py`: `ConfigError`, `KeyNotFoundError(ConfigError, KeyError)`.
 - `tidyconf/py.typed`: PEP 561 marker.
 - `tests/`: pytest, fixture files in `tests/resources/`.
+- `examples/`: runnable demo app (`app.py` + `config.toml`); type-checked by mypy, not part of the package.
 
 Load pipeline (`Config.load`): load each file in order -> deep merge left to right (later
 wins) -> env overrides (if `env_prefix`) -> `Config(merged)`, which also snapshots the

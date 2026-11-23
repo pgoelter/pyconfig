@@ -1,0 +1,8 @@
+# Defaults for the example app. Override them in an optional config.local.toml
+# next to this file, or with environment variables such as HELLO_SERVER__PORT=9000.
+greeting = "Hello from tidyconf!"
+debug = false
+
+[server]
+host = "127.0.0.1"
+port = 8000
