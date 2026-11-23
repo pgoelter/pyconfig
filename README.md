@@ -114,7 +114,7 @@ from tidyconf import Config, optional, ConfigError, KeyNotFoundError
 | API | Description |
 | --- | --- |
 | `Config(data=None)` | Create a config from a mapping (deep-copied). Handy in tests. |
-| `Config.load(*sources, env_prefix=None)` | Load and deep-merge files in order (later wins), then apply env overrides if `env_prefix` is given. No sources is allowed (env only / empty). |
+| `Config.load(*sources, env_prefix=None)` | Load and deep-merge files in order (later wins), then apply env overrides if `env_prefix` is given. Env variables can only override keys defined in the files. |
 | `optional(path)` | Mark a source file as optional: skipped if it does not exist. |
 | `config.get(route, default=...)` | Value at a dotted route such as `"server.port"`. Returns a deep copy. Raises `KeyNotFoundError` if missing, unless `default` is given. |
 | `config[route]` | Same as `config.get(route)` without a default. |
@@ -155,8 +155,12 @@ override:
 - The rest of the name is split on double underscores into a route:
   `MYAPP_DATABASE__POOL_SIZE` sets `database.pool_size`. Single underscores are part
   of the key.
-- Each part matches an existing key case-insensitively; a key that does not exist
-  yet is created in lower case.
+- Each part matches an existing key case-insensitively.
+- **The key must already exist in your config files.** Environment variables only
+  override values, they never add new ones. An unknown variable such as
+  `MYAPP_DATABSE__PORT` (note the typo) raises `ConfigError` at load time instead of
+  being silently ignored. Give every setting a default in your config file; for
+  secrets, use an empty placeholder like `password = ""`.
 - Variables are applied in sorted order of their names.
 
 Values are converted based on the type of the value that already exists at that
@@ -169,7 +173,7 @@ route:
 | `float` | `"0.5"` | `0.5` |
 | `list` | JSON array, e.g. `'["search", "export"]'` | `["search", "export"]` |
 | mapping (section) | anything | `ConfigError`: a whole section cannot be overridden |
-| `str`, `None`, or missing | anything | the plain string |
+| `str` or `None` | anything | the plain string |
 
 A value that cannot be converted raises `ConfigError` naming the environment
 variable, as does a route that runs through a non-mapping value.
@@ -179,8 +183,6 @@ variable, as does a route that runs through a non-mapping value.
 - Keys containing `.` cannot be reached with dotted routes (no escaping).
 - Keys containing `.` or `-` cannot be set from environment variables: shells and
   most tools do not allow those characters in variable names.
-- A key created from the environment (one not in any file) gets a lower-case name
-  and a plain string value.
 - An environment variable can only replace a single value, not a whole section or a
   single list element.
 

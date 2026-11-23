@@ -42,7 +42,9 @@ state for `reset()`.
 - `get()` and `to_dict()` return deep copies; `set()` stores the value as given.
 - Deep merge: mappings merge recursively, everything else (lists too) is replaced.
 - Env values are converted by the type of the existing value at that route (bool before
-  int!); missing/str/None -> string; sections can't be overridden.
+  int!); str/None -> string; sections can't be overridden.
+- Env vars only override existing keys; an unknown `<PREFIX>_*` var raises `ConfigError`
+  (catches typos instead of silently adding keys).
 - PyYAML is an optional extra, imported lazily inside the YAML branch only.
 - Missing required file raises the builtin `FileNotFoundError`; `optional()` files are skipped.
 - Keys containing `.` are unreachable by design (no escaping).

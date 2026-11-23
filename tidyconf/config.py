@@ -59,7 +59,7 @@ class Config:
             *sources: JSON, TOML or YAML files; later files override earlier ones.
                 Wrap a path in `optional()` to skip it if it does not exist.
             env_prefix: If given, variables named `<PREFIX>_SECTION__KEY` override
-                the value at route `section.key`.
+                the value at route `section.key`, which must exist in the files.
 
         Returns:
             The loaded config. `reset()` returns to this state.
@@ -147,22 +147,25 @@ def _apply_env(data: dict[str, Any], prefix: str) -> None:
     for name in sorted(os.environ):
         if not name.lower().startswith(start):
             continue
-        *parents, last = name[len(start) :].split("__")
+        segments = name[len(start) :].lower().split("__")
         node = data
-        for segment in parents:
-            child = node.setdefault(_match_key(node, segment), {})
-            if not isinstance(child, dict):
-                raise ConfigError(f"{name}: '{segment}' is not a mapping")
-            node = child
-        key = _match_key(node, last)
-        node[key] = _convert(name, os.environ[name], node.get(key))
+        for i, segment in enumerate(segments):
+            if not isinstance(node, dict):
+                raise ConfigError(f"{name}: '{segments[i - 1]}' is not a mapping")
+            key = _match_key(node, segment)
+            if key is None:
+                route = ".".join(segments[: i + 1])
+                raise ConfigError(
+                    f"{name}: '{route}' is not defined in the config files"
+                )
+            if i == len(segments) - 1:
+                node[key] = _convert(name, os.environ[name], node[key])
+            else:
+                node = node[key]
 
 
-def _match_key(node: Mapping[str, Any], segment: str) -> str:
-    lowered = segment.lower()
-    return next(
-        (k for k in node if isinstance(k, str) and k.lower() == lowered), lowered
-    )
+def _match_key(node: Mapping[str, Any], segment: str) -> str | None:
+    return next((k for k in node if isinstance(k, str) and k.lower() == segment), None)
 
 
 def _convert(name: str, raw: str, current: Any) -> Any:

@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 from typing import Any
 
@@ -71,24 +72,30 @@ def test_matches_existing_keys_case_insensitively(
     assert config.get("Database") == {"Port": 6543, "host": "localhost"}
 
 
-def test_new_keys_are_lower_cased(
-    monkeypatch: pytest.MonkeyPatch, config_file: Path
+@pytest.mark.parametrize(
+    ("var", "route"),
+    [
+        ("MYAPP_DATABSE__PORT", "databse"),  # typo in a section name
+        ("MYAPP_DATABASE__USER", "database.user"),  # unknown key in a section
+        ("MYAPP_BRAND_NEW", "brand_new"),
+        ("MYAPP_", ""),
+    ],
+)
+def test_unknown_key_raises(
+    monkeypatch: pytest.MonkeyPatch, config_file: Path, var: str, route: str
 ) -> None:
-    monkeypatch.setenv("MYAPP_CACHE__REDIS_URL", "redis://localhost")
-    monkeypatch.setenv("MYAPP_DATABASE__USER", "admin")
+    monkeypatch.setenv(var, "x")
 
-    config = Config.load(config_file, env_prefix="MYAPP")
-
-    assert config.get("cache") == {"redis_url": "redis://localhost"}
-    assert config.get("Database.user") == "admin"
+    message = f"{var}: '{route}' is not defined in the config files"
+    with pytest.raises(ConfigError, match=re.escape(message)):
+        Config.load(config_file, env_prefix="MYAPP")
 
 
-def test_env_only_without_files(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_env_without_files_raises(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("MYAPP_SERVER__PORT", "8080")
 
-    config = Config.load(env_prefix="MYAPP")
-
-    assert config.to_dict() == {"server": {"port": "8080"}}
+    with pytest.raises(ConfigError, match="MYAPP_SERVER__PORT"):
+        Config.load(env_prefix="MYAPP")
 
 
 @pytest.mark.parametrize(
@@ -109,7 +116,6 @@ def test_env_only_without_files(monkeypatch: pytest.MonkeyPatch) -> None:
         ("MYAPP_HOSTS", "[]", "hosts", []),
         ("MYAPP_NAME", "123", "name", "123"),
         ("MYAPP_NOTHING", "something", "nothing", "something"),
-        ("MYAPP_BRAND_NEW", "42", "brand_new", "42"),
     ],
 )
 def test_value_conversion(
