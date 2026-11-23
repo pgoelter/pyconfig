@@ -1,5 +1,5 @@
 {
-  "app": {"name": "demo", "debug": false, "owner": "Philipp Gölter"},
+  "app": {"name": "demo", "debug": false, "owner": "Team Grün"},
   "database": {"host": "localhost", "port": 5432, "timeout": 1.5},
   "servers": ["alpha", "beta"]
 }
