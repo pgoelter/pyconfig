@@ -179,6 +179,41 @@ route:
 A value that cannot be converted raises `ConfigError` naming the environment
 variable, as does a route that runs through a non-mapping value.
 
+### Secrets from files
+
+Environment variables are visible in more places than you might want (`docker inspect`,
+child processes, crash reports). Docker, Docker Compose, Swarm and Kubernetes can instead
+mount each secret as a read-only file inside the container. Append `_FILE` to a variable
+name to read the value from such a file:
+
+```text
+server: ./secrets/db_password.txt         (not in the repo)
+  ↓  docker-compose.yml: secrets → mounted read-only at container start
+container: /run/secrets/db_password
+  ↓  MYAPP_DATABASE__PASSWORD_FILE=/run/secrets/db_password
+tidyconf: config["database.password"] == file content
+```
+
+```yaml
+# docker-compose.yml
+services:
+  app:
+    image: myapp
+    environment:
+      MYAPP_DATABASE__PASSWORD_FILE: /run/secrets/db_password
+    secrets: [db_password]
+secrets:
+  db_password:
+    file: ./secrets/db_password.txt
+```
+
+- The file is read as UTF-8; trailing newlines are removed. The value is then converted
+  like any other override.
+- Setting both `MYAPP_DATABASE__PASSWORD` and `MYAPP_DATABASE__PASSWORD_FILE` raises
+  `ConfigError`.
+- If your config has a key that really ends in `_file` (e.g. `logging.log_file`),
+  `MYAPP_LOGGING__LOG_FILE` overrides that key as usual.
+
 ### Limitations
 
 - Keys containing `.` cannot be reached with dotted routes (no escaping).

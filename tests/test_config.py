@@ -1,3 +1,4 @@
+import re
 from typing import Any
 
 import pytest
@@ -53,6 +54,22 @@ def test_get_missing_raises(config: Config, route: str) -> None:
         config.get(route)
 
     assert str(exc_info.value) == f"Key '{route}' not found"
+
+
+@pytest.mark.parametrize(
+    ("route", "suggestion"),
+    [
+        ("app.nmae", "app.name"),
+        ("databse.port", "database.port"),
+        ("server", "servers"),
+    ],
+)
+def test_get_missing_suggests_close_route(
+    config: Config, route: str, suggestion: str
+) -> None:
+    message = f"Key '{route}' not found. Did you mean '{suggestion}'?"
+    with pytest.raises(KeyNotFoundError, match=re.escape(message)):
+        config.get(route)
 
 
 def test_getitem_missing_raises(config: Config) -> None:
