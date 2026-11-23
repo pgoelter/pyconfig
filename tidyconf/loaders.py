@@ -35,6 +35,8 @@ def _load_file(path: str | os.PathLike[str]) -> dict[str, Any]:
 
 
 def _load_yaml(path: Path) -> Any:
+    # Read first, so a missing optional file is skipped even without PyYAML.
+    text = path.read_text(encoding="utf-8")
     try:
         import yaml
     except ImportError:
@@ -42,9 +44,8 @@ def _load_yaml(path: Path) -> Any:
             "Reading YAML files requires PyYAML: pip install tidyconf[yaml]"
         ) from None
 
-    with path.open(encoding="utf-8") as file:
-        try:
-            data = yaml.safe_load(file)
-        except yaml.YAMLError as err:
-            raise ConfigError(f"Could not parse {path}: {err}") from err
+    try:
+        data = yaml.safe_load(text)
+    except yaml.YAMLError as err:
+        raise ConfigError(f"Could not parse {path}: {err}") from err
     return {} if data is None else data
