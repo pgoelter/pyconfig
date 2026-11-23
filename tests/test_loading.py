@@ -177,6 +177,16 @@ def test_yaml_without_pyyaml_raises(monkeypatch: pytest.MonkeyPatch) -> None:
         Config.load(RESOURCES / "base.yaml")
 
 
+def test_missing_optional_yaml_skipped_without_pyyaml(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setitem(sys.modules, "yaml", None)
+
+    config = Config.load(RESOURCES / "base.json", optional(tmp_path / "local.yml"))
+
+    assert config.to_dict() == BASE
+
+
 def test_json_and_toml_work_without_pyyaml(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setitem(sys.modules, "yaml", None)
 
