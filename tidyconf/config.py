@@ -1,9 +1,10 @@
 """The Config class plus file merging and environment overrides."""
 
 import copy
+import difflib
 import json
 import os
-from collections.abc import Mapping, MutableMapping
+from collections.abc import Iterable, Mapping, MutableMapping
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Self
@@ -95,7 +96,10 @@ class Config:
         value = self._lookup(route)
         if value is _MISSING:
             if default is _MISSING:
-                raise KeyNotFoundError(f"Key '{route}' not found")
+                message = f"Key '{route}' not found"
+                if suggestion := self._suggest(route):
+                    message += f". Did you mean '{suggestion}'?"
+                raise KeyNotFoundError(message)
             return default
         return copy.deepcopy(value)
 
@@ -113,6 +117,22 @@ class Config:
                 return _MISSING
             node = node[key]
         return node
+
+    def _suggest(self, route: str) -> str | None:
+        # Fix the first missing key; only suggest routes that actually exist.
+        keys = route.split(".")
+        node: Any = self._data
+        for i, key in enumerate(keys):
+            if not isinstance(node, Mapping):
+                return None
+            if key not in node:
+                match = _closest(key, (k for k in node if isinstance(k, str)))
+                if match is None:
+                    return None
+                candidate = ".".join([*keys[:i], match, *keys[i + 1 :]])
+                return candidate if candidate in self else None
+            node = node[key]
+        return None  # pragma: no cover - only called for routes that don't exist
 
     def set(self, route: str, value: Any) -> None:
         """Set the value at a dotted route, creating intermediate sections.
@@ -158,24 +178,63 @@ def _apply_env(data: dict[str, Any], prefix: str) -> None:
         if not name.lower().startswith(start):
             continue
         segments = name[len(start) :].lower().split("__")
-        node = data
-        for i, segment in enumerate(segments):
-            if not isinstance(node, dict):
-                raise ConfigError(f"{name}: '{segments[i - 1]}' is not a mapping")
-            key = _match_key(node, segment)
-            if key is None:
-                route = ".".join(segments[: i + 1])
-                raise ConfigError(
-                    f"{name}: '{route}' is not defined in the config files"
-                )
-            if i == len(segments) - 1:
-                node[key] = _convert(name, os.environ[name], node[key])
-            else:
-                node = node[key]
+        raw = os.environ[name]
+        # NAME_FILE=/path reads the value from a file (e.g. Docker/Kubernetes
+        # secrets), unless a key ending in "_file" itself exists.
+        if segments[-1].endswith("_file") and not _route_exists(data, segments):
+            if name[:-5] in os.environ:
+                raise ConfigError(f"{name}: set either {name[:-5]} or {name}, not both")
+            segments[-1] = segments[-1].removesuffix("_file")
+            raw = _read_secret(name, raw)
+        _set_env_value(data, name, name[: len(start)], segments, raw)
+
+
+def _route_exists(data: dict[str, Any], segments: list[str]) -> bool:
+    node: Any = data
+    for segment in segments:
+        key = _match_key(node, segment) if isinstance(node, dict) else None
+        if key is None:
+            return False
+        node = node[key]
+    return True
+
+
+def _read_secret(name: str, path: str) -> str:
+    try:
+        return Path(path).read_text(encoding="utf-8").rstrip("\r\n")
+    except (OSError, UnicodeDecodeError) as err:
+        raise ConfigError(f"{name}: cannot read secret file '{path}'") from err
+
+
+def _set_env_value(
+    data: dict[str, Any], name: str, prefix: str, segments: list[str], raw: str
+) -> None:
+    node = data
+    for i, segment in enumerate(segments):
+        if not isinstance(node, dict):
+            raise ConfigError(f"{name}: '{segments[i - 1]}' is not a mapping")
+        key = _match_key(node, segment)
+        if key is None:
+            route = ".".join(segments[: i + 1])
+            message = f"{name}: '{route}' is not defined in the config files"
+            match = _closest(segment, (k.lower() for k in node if isinstance(k, str)))
+            if match is not None:
+                fixed = [*segments[:i], match, *segments[i + 1 :]]
+                message += f". Did you mean {prefix}{'__'.join(fixed).upper()}?"
+            raise ConfigError(message)
+        if i == len(segments) - 1:
+            node[key] = _convert(name, raw, node[key])
+        else:
+            node = node[key]
 
 
 def _match_key(node: Mapping[str, Any], segment: str) -> str | None:
     return next((k for k in node if isinstance(k, str) and k.lower() == segment), None)
+
+
+def _closest(word: str, candidates: Iterable[str]) -> str | None:
+    matches = difflib.get_close_matches(word, list(candidates), n=1)
+    return matches[0] if matches else None
 
 
 def _convert(name: str, raw: str, current: Any) -> Any:

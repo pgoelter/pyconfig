@@ -178,3 +178,68 @@ def test_reset_keeps_env_overrides(
     config.reset()
 
     assert config.get("workers") == 8
+
+
+def test_unknown_key_suggests_env_var(
+    monkeypatch: pytest.MonkeyPatch, config_file: Path
+) -> None:
+    monkeypatch.setenv("MYAPP_DATABSE__PORT", "6543")
+
+    with pytest.raises(ConfigError, match="Did you mean MYAPP_DATABASE__PORT?"):
+        Config.load(config_file, env_prefix="MYAPP")
+
+
+@pytest.mark.parametrize("content", ["s3cret", "s3cret\n", "s3cret\r\n"])
+def test_file_suffix_reads_secret(
+    monkeypatch: pytest.MonkeyPatch, config_file: Path, tmp_path: Path, content: str
+) -> None:
+    secret = tmp_path / "db_host"
+    secret.write_bytes(content.encode())
+    monkeypatch.setenv("MYAPP_DATABASE__HOST_FILE", str(secret))
+
+    config = Config.load(config_file, env_prefix="MYAPP")
+
+    assert config.get("Database.host") == "s3cret"
+
+
+def test_file_suffix_value_is_converted(
+    monkeypatch: pytest.MonkeyPatch, config_file: Path, tmp_path: Path
+) -> None:
+    secret = tmp_path / "port"
+    secret.write_text("6543\n", encoding="utf-8")
+    monkeypatch.setenv("MYAPP_DATABASE__PORT_FILE", str(secret))
+
+    assert Config.load(config_file, env_prefix="MYAPP").get("Database.Port") == 6543
+
+
+def test_key_ending_in_file_is_a_normal_override(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    path = tmp_path / "config.toml"
+    path.write_text('[logging]\nlog_file = "app.log"\n', encoding="utf-8")
+    monkeypatch.setenv("MYAPP_LOGGING__LOG_FILE", "/var/log/app.log")
+
+    config = Config.load(path, env_prefix="MYAPP")
+
+    assert config.get("logging.log_file") == "/var/log/app.log"
+
+
+def test_missing_secret_file_raises(
+    monkeypatch: pytest.MonkeyPatch, config_file: Path, tmp_path: Path
+) -> None:
+    monkeypatch.setenv("MYAPP_DATABASE__HOST_FILE", str(tmp_path / "missing"))
+
+    with pytest.raises(ConfigError, match="MYAPP_DATABASE__HOST_FILE: cannot read"):
+        Config.load(config_file, env_prefix="MYAPP")
+
+
+def test_value_and_file_variable_together_raise(
+    monkeypatch: pytest.MonkeyPatch, config_file: Path, tmp_path: Path
+) -> None:
+    secret = tmp_path / "db_host"
+    secret.write_text("from-file", encoding="utf-8")
+    monkeypatch.setenv("MYAPP_DATABASE__HOST", "from-env")
+    monkeypatch.setenv("MYAPP_DATABASE__HOST_FILE", str(secret))
+
+    with pytest.raises(ConfigError, match="not both"):
+        Config.load(config_file, env_prefix="MYAPP")

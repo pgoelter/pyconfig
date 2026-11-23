@@ -60,6 +60,10 @@ state for `reset()`.
   int!); str/None -> string; sections can't be overridden.
 - Env vars only override existing keys; an unknown `<PREFIX>_*` var raises `ConfigError`
   (catches typos instead of silently adding keys).
+- `<PREFIX>_..._FILE=/path` reads the value from a file (Docker/Kubernetes secrets), unless a
+  key literally ending in `_file` exists. Both `X` and `X_FILE` set -> `ConfigError`.
+- Missing keys and unknown env vars get a "Did you mean ...?" hint via `difflib`
+  (only routes that actually exist are suggested).
 - PyYAML is an optional extra, imported lazily inside the YAML branch only.
 - Missing required file raises the builtin `FileNotFoundError`; `optional()` files are skipped.
 - Keys containing `.` are unreachable by design (no escaping).
