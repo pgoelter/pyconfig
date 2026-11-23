@@ -1,4 +1,4 @@
-[![CI](https://github.com/pgoelter/pyconfig/actions/workflows/main.yml/badge.svg?branch=main)](https://github.com/pgoelter/pyconfig/actions/workflows/main.yml)
+[![CI](https://github.com/pgoelter/tidyconf/actions/workflows/main.yml/badge.svg?branch=main)](https://github.com/pgoelter/tidyconf/actions/workflows/main.yml)
 
 # tidyconf
 
