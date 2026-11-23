@@ -84,6 +84,25 @@ def test_get_returns_copy(config: Config) -> None:
     assert config.get("app.name") == "demo"
 
 
+@pytest.mark.parametrize("route", ["app", "app.name", "app.debug", "servers"])
+def test_contains_existing(config: Config, route: str) -> None:
+    assert route in config
+
+
+@pytest.mark.parametrize("route", ["missing", "app.missing", "app.name.deeper", ""])
+def test_contains_missing(config: Config, route: str) -> None:
+    assert route not in config
+
+
+def test_contains_none_value() -> None:
+    # The case `get(route, default=None)` cannot distinguish from a missing key.
+    assert "token" in Config({"token": None})
+
+
+def test_contains_non_string(config: Config) -> None:
+    assert 1 not in config
+
+
 def test_set_existing_key(config: Config) -> None:
     config.set("database.port", 6543)
 

@@ -118,6 +118,7 @@ from tidyconf import Config, optional, ConfigError, KeyNotFoundError
 | `optional(path)` | Mark a source file as optional: skipped if it does not exist. |
 | `config.get(route, default=...)` | Value at a dotted route such as `"server.port"`. Returns a deep copy. Raises `KeyNotFoundError` if missing, unless `default` is given. |
 | `config[route]` | Same as `config.get(route)` without a default. |
+| `route in config` | Whether the route exists, e.g. `"database.port" in config`. Also `True` for keys set to `None`. |
 | `config.set(route, value)` | Set a value, creating intermediate sections as needed. Raises `TypeError` if a part of the route is not a mapping. |
 | `config.reset()` | Restore the state at construction / `load()` time. |
 | `config.to_dict()` | Deep copy of all data as a plain `dict`. |
