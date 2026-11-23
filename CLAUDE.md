@@ -7,20 +7,22 @@ Renamed from `pyconfig` (that PyPI name is taken). 1.0 intentionally broke the o
 
 ## Commands
 
-Only Python 3.13 is installed locally (`py -3.13`; bare `python` is the Microsoft Store stub).
-Run everything from the repo root.
+Managed with [uv](https://docs.astral.sh/uv/). Run everything from the repo root.
+On this machine `uv` is not on the Git Bash PATH: use
+`/c/Users/pgoel/AppData/Roaming/Python/Scripts/uv.exe` (bare `python` is the Microsoft Store stub).
 
 ```sh
-py -3.13 -m venv .venv
-.venv/Scripts/python -m pip install -e ".[dev]"
-.venv/Scripts/python -m pytest                    # with coverage, fails under 90 %
-.venv/Scripts/python -m ruff check . && .venv/Scripts/python -m ruff format --check .
-.venv/Scripts/python -m mypy                      # strict, checks tidyconf/ and tests/
-.venv/Scripts/python -m pip install build && .venv/Scripts/python -m build
+uv sync                                     # create/update .venv (Python from .python-version) with dev group
+uv run pytest                               # with coverage, fails under 90 %
+uv run ruff check . && uv run ruff format --check .
+uv run mypy                                 # strict, checks tidyconf/, tests/ and examples/
+uv run --isolated --python 3.11 pytest      # any CI version locally; uv downloads it if needed
+uv build                                    # sdist + wheel into dist/
 ```
 
-All tool config lives in `pyproject.toml` (hatchling). CI (`.github/workflows/main.yml`)
-runs ruff, mypy and pytest on Python 3.11–3.14.
+Dev tools are the `dev` dependency group, pinned in the committed `uv.lock`; after changing
+dependencies run `uv lock`. All tool config lives in `pyproject.toml` (build backend: hatchling).
+CI (`.github/workflows/main.yml`) runs `uv sync --locked`, ruff, mypy and pytest on Python 3.11–3.14.
 
 ## Layout
 
