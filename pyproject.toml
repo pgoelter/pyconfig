@@ -1,0 +1,58 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "tidyconf"
+dynamic = ["version"]
+description = "Simple, typed configuration for small apps: JSON/TOML/YAML files, layering and env overrides."
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Philipp Gölter" }]
+requires-python = ">=3.11"
+dependencies = []
+keywords = ["config", "configuration", "settings", "toml", "yaml", "json", "env"]
+classifiers = [
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Typing :: Typed",
+]
+
+[project.optional-dependencies]
+yaml = ["PyYAML>=6"]
+dev = ["pytest", "pytest-cov", "mypy", "ruff", "types-PyYAML", "PyYAML>=6"]
+
+[project.urls]
+Homepage = "https://github.com/pgoelter/pyconfig"
+Source = "https://github.com/pgoelter/pyconfig"
+Issues = "https://github.com/pgoelter/pyconfig/issues"
+
+[tool.hatch.version]
+path = "tidyconf/__init__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["tidyconf"]
+
+[tool.hatch.build.targets.sdist]
+include = ["tidyconf", "tests", "README.md", "LICENSE"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--cov=tidyconf --cov-report=term-missing --cov-fail-under=90"
+
+[tool.mypy]
+strict = true
+files = ["tidyconf", "tests"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
