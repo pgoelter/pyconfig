@@ -1,51 +1,58 @@
 # CLAUDE.md
 
-Small Python library: a process-wide singleton `Config` object holding a nested dict, loadable from JSON/YAML/TOML, accessed by dotted routes (`"a.b.c"`).
+`tidyconf`: small, typed, dependency-free config library for self-hosted apps. Loads JSON/TOML/YAML
+files, deep-merges them, applies env var overrides, and exposes values via dotted routes (`"a.b.c"`).
 
-> **Current state (2026-11):** `main`/`modernize` HEAD (`6a68e0a`, "Add thread safety measures") does **not import**: unindented class docstring in `pyconfig/config.py:14` and `Lock` never imported. Even with both fixed, the `__new__`/`__init__` combo makes every construction raise `SingleInstanceException`. `HEAD~1` (`4da120c`) is the last green revision (11/11 tests pass). Check `git log` before assuming this still holds.
+Renamed from `pyconfig` (that PyPI name is taken). 1.0 intentionally broke the old singleton API.
 
-## Setup / test / build
+## Commands
 
-Only Python 3.13 is installed locally (use `py -3.13`; bare `python` is the Microsoft Store stub). The pinned `requirements.txt` does **not** install on Python ≥3.12 (PyYAML 5.4.1 fails to build), so don't use it:
+Only Python 3.13 is installed locally (`py -3.13`; bare `python` is the Microsoft Store stub).
+Run everything from the repo root.
 
 ```sh
 py -3.13 -m venv .venv
-.venv/Scripts/python -m pip install pytest pytest-cov pyyaml toml flake8
-.venv/Scripts/python -m pytest -q --cov=pyconfig --cov-report=term-missing   # run from repo root
-.venv/Scripts/python -m flake8 . --select=E9,F63,F7,F82                      # the CI gate
-.venv/Scripts/python -m pip wheel . --no-deps -w dist                        # build (setup.py, setuptools)
+.venv/Scripts/python -m pip install -e ".[dev]"
+.venv/Scripts/python -m pytest                    # with coverage, fails under 90 %
+.venv/Scripts/python -m ruff check . && .venv/Scripts/python -m ruff format --check .
+.venv/Scripts/python -m mypy                      # strict, checks tidyconf/ and tests/
+.venv/Scripts/python -m pip install build && .venv/Scripts/python -m build
 ```
 
-- Tests must run from the repo root: fixtures use relative paths (`tests/resources/...`), and `import pyconfig` works only because pytest puts the root on `sys.path` (the package isn't installed).
-- CI: `.github/workflows/main.yml` runs on push only, with a 3.6–3.9 matrix and `actions/*@v2` (both obsolete).
+All tool config lives in `pyproject.toml` (hatchling). CI (`.github/workflows/main.yml`)
+runs ruff, mypy and pytest on Python 3.11–3.14.
 
-## Architecture
+## Layout
 
-- `pyconfig/config.py`: `Config` holds everything. State is `defaults` (live dict) and `_defaults` (copy made at construction, used by `reset_config`).
-  - Loaders `from_json_file` / `from_yml_file` (`yaml.FullLoader`) / `from_toml_file` (third-party `toml`) all call `cls(defaults=...)`.
-  - `get(route)` is `reduce(operator.getitem, route.split("."))`. `set(route, value)` builds intermediate dicts with `setdefault`.
-  - `get_instance()` lazily creates an empty instance.
-- `pyconfig/_decorators.py`: `throws_keyError` maps `KeyError` to `EntryNotFoundException` (only on `get`).
-- `pyconfig/exceptions.py`: `EntryNotFoundException`, `SingleInstanceException`.
-- Runtime deps: `PyYAML`, `toml`. They are **not** declared in `setup.py` (`install_requires` is missing).
-- Packaging: `setup.py` with `find_packages()` also ships the `tests` package as a top-level package in the wheel.
+- `tidyconf/__init__.py`: public exports and `__version__` (the only place the version lives).
+- `tidyconf/config.py`: `Config`, `optional()` / `OptionalFile`, private `_deep_merge` and env logic.
+- `tidyconf/loaders.py`: `_load_file(path) -> dict`, format chosen by suffix.
+- `tidyconf/exceptions.py`: `ConfigError`, `KeyNotFoundError(ConfigError, KeyError)`.
+- `tidyconf/py.typed`: PEP 561 marker.
+- `tests/`: pytest, fixture files in `tests/resources/`.
 
-## Load-bearing / surprising behaviour (don't "fix" silently; these are public behaviour)
+Load pipeline (`Config.load`): load each file in order -> deep merge left to right (later
+wins) -> env overrides (if `env_prefix`) -> `Config(merged)`, which also snapshots the
+state for `reset()`.
 
-- The singleton lives in the class attribute `Config.__instance__` (dunder on both sides, so it's *not* name-mangled). Tests reset it by assigning `Config.__instance__ = None`; any refactor must keep a reset hook for tests.
-- A second `Config(...)` or `from_*_file(...)` while an instance exists raises `SingleInstanceException`. You can't reload config without the manual reset.
-- `reset_config()` assigns `_defaults` by reference, so after a reset, later `set()` calls mutate the "defaults" and a second reset no longer restores them.
-- `get()` with no route returns the live internal dict, so callers can mutate config.
-- `get()` through a non-dict (string or list) raises a raw `TypeError`, not `EntryNotFoundException`; there's no list-index support. Keys containing `.` are unreachable.
-- Files are opened without `encoding=`, so on Windows (cp1252) UTF-8 configs with non-ASCII characters load as mojibake.
-- A YAML/JSON/TOML file whose top level isn't a mapping gets stored as-is and breaks `set`/`get`.
-- `tests/test_config_access.py::test_access_existing_singleton_instance` passes only because of test order: it references the fixture function without requesting it. `tests/test_config_modify.py` fixture keys contain typos (`databasae`, `ap-server`).
-- The PyPI name `pyconfig` belongs to an unrelated project (3.4.0). Don't publish under it.
+## Design decisions
+
+- No singleton. Apps share one config via a module (`settings.py` does `config = Config.load(...)`).
+- `get()` and `to_dict()` return deep copies; `set()` stores the value as given.
+- Deep merge: mappings merge recursively, everything else (lists too) is replaced.
+- Env values are converted by the type of the existing value at that route (bool before
+  int!); missing/str/None -> string; sections can't be overridden.
+- PyYAML is an optional extra, imported lazily inside the YAML branch only.
+- Missing required file raises the builtin `FileNotFoundError`; `optional()` files are skipped.
+- Keys containing `.` are unreachable by design (no escaping).
 
 ## Conventions
 
-- Keep the public API stable (`Config`, `get`/`set`/`reset_config`/`get_instance`/`from_*_file`, the two exceptions, dotted routes) unless a change is explicitly a breaking-phase task.
-- Add a failing test that pins current behaviour *before* changing it. Every bug fix gets a regression test.
-- Google-style docstrings, type hints on public methods, f-strings, max line length 127 (matches CI flake8).
-- Version lives in two places (`setup.py`, `pyconfig/__init__.py`). Bump both until it is single-sourced.
-- `.idea/` is local IDE state. Don't commit it.
+- PEP 8 via ruff (rules E, F, I, UP, B, SIM), line length 88, ruff format.
+- Type hints everywhere; `mypy --strict` must pass for code and tests.
+- Short Google-style docstrings on the public API.
+- KISS / YAGNI: no features beyond what's documented in README.md without a real need.
+- Every bug fix gets a regression test.
+- Docs live only in `README.md` (users) and this file (developers). No other markdown files.
+- `.idea/` is local IDE state; never commit it.
+- Git: commit regularly with the user as author; never push.
