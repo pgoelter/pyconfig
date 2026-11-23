@@ -1,123 +1,189 @@
-[![Pytest and Lint](https://github.com/pgoelter/pyconfig/actions/workflows/main.yml/badge.svg?branch=main)](https://github.com/pgoelter/pyconfig/actions/workflows/main.yml)
+[![CI](https://github.com/pgoelter/pyconfig/actions/workflows/main.yml/badge.svg?branch=main)](https://github.com/pgoelter/pyconfig/actions/workflows/main.yml)
 
-# Pyconfig
+# tidyconf
 
-Small config library to provide a singleton instance configuration object. Allows loading an existing configuration from a file (.json, .yml, .toml).
+Simple configuration for small, self-hosted apps. Load settings from JSON, TOML or
+YAML files, layer a local override file on top of the defaults, let environment
+variables override single values, and read everything through dotted routes like
+`config["database.port"]`. Fully typed, Python 3.11+, no dependencies (PyYAML only
+if you use YAML files).
 
-# Functionality
+## Install
 
-## Loading Configuration
+```sh
+pip install tidyconf          # JSON and TOML
+pip install "tidyconf[yaml]"  # plus YAML support (PyYAML)
+```
 
-The following classmethods allow loading an existing configuration from a file:
+## Usage
+
+`config.toml` (defaults, committed to the repo):
+
+```toml
+debug = false
+
+[server]
+host = "127.0.0.1"
+port = 8000
+
+[database]
+url = "sqlite:///app.db"
+pool_size = 5
+
+[features]
+enabled = ["search"]
+```
+
+`config.local.yml` (optional, per machine, not committed):
+
+```yaml
+server:
+  host: 0.0.0.0
+database:
+  url: postgresql://localhost/myapp
+```
+
+Environment (e.g. set by Docker or systemd):
+
+```sh
+export MYAPP_SERVER__PORT=9000
+export MYAPP_DEBUG=true
+```
+
+Load and read:
 
 ```python
-from pyconfig import Config
-# The following methods return an singleton instance of type Config. After loading a config, it can be accessed by calling Config.get_instance()
+from tidyconf import Config, optional
 
-# Load configuration from existing .json file
-json_config = Config.from_json_file("./config.json")
+config = Config.load(
+    "config.toml",
+    optional("config.local.yml"),  # skipped if the file does not exist
+    env_prefix="MYAPP",
+)
 
-# Load configuration from existing .yml file (not yet implemented!)
-yml_config = Config.from_yml_file("./config.yml")
-
-# Load configuration from existing .toml file (not yet implemented!)
-toml_config = Config.from_toml_file("./config.toml")
+config["server.host"]  # '0.0.0.0' (from config.local.yml)
+config["server.port"]  # 9000 (from env, converted to int)
+config.get("debug")  # True (from env, converted to bool)
+config.get("database")  # {'url': 'postgresql://localhost/myapp', 'pool_size': 5}
+config.get("cache.ttl", default=60)  # 60 (missing key, default used)
+config["cache.ttl"]  # raises KeyNotFoundError
 ```
 
-## Accessing configuration
+### Sharing one config across your app
 
-After either initializing an empty **Config** object or loading a configuration from a file it can be accessed as follows:
+There is no global singleton. Load the config once in a module and import it
+wherever you need it; Python's module cache makes it a single shared object:
 
 ```python
-# If no config is loaded before calling the following an empty Config object is initialized.
-from pyconfig import Config
+# myapp/settings.py
+from pathlib import Path
 
-# Get an existing singleton instance.
-config = Config.get_instance()
+from tidyconf import Config, optional
 
-# Get a value of an existing key in the configuration object
-# Returns the value stored in config.defaults['route']['to']['property']
-config.get(route="route.to.property")
+BASE_DIR = Path(__file__).resolve().parent
+
+config = Config.load(
+    BASE_DIR / "config.toml",
+    optional(BASE_DIR / "config.local.yml"),
+    env_prefix="MYAPP",
+)
 ```
-
-## Modifying Configuration
-
-An existing configuration can be modified as follows:
 
 ```python
-from pyconfig import Config
+# myapp/server.py
+from myapp.settings import config
 
-config = Config.get_instance()
-# Assuming the following configuration exists in the Config object (initial state):
-# {
-#   "root": {
-#       "property": None
-#   }
-# }
 
-# Changes the value of existing key 'property' to 'value'
-config.set(route="root.property", value="value")
-
-# Add a new key value pair to the configuration
-config.set(route="root.another_property", value="another_value")
-
-# Now the configuration looks like the following:
-# {
-#   "root": {
-#       "property": None
-#       "another_property": "another_value"
-#   }
-# }
-
-# Reset the configuration to the initial state
-config.reset_config()
-
+def run() -> None:
+    serve(host=config["server.host"], port=config["server.port"])
 ```
 
-# Sample Usage
+Relative paths are resolved against the current working directory, so building
+them from `__file__` as above keeps loading independent of where the app is started.
 
-1. Create configuration file with json syntax and store it as **config.json**:
-
-```json
-{
-  "_comment": "This file should serve as an example.",
-  "api": {
-    "authentification": {
-      "email": "YOURMAILADDRESS",
-      "password": "YOURPASSWORD",
-      "ssl_certificate": "PATHTOCERT",
-      "routes": {
-        "base": "BASEURL",
-        "login": "LOGINURL"
-      }
-    }
-  }
-}
-```
-
-2. Load the configuration with the Config object:
+## API
 
 ```python
-import pyconfig as conf
-
-my_config = config.from_json_file(filename='config.json', project_name='My Awesome Project)
-
-# Get configuration
-api_config = my_config.get("api")
-
-# Or only get the base URL for a specified api
-base_url = my_config.get("api.routes.base")
-
-
-# You can also create new keys like this:
-my_config.set("my.new.configuration", {'parameter_1': 1, 'parameter_2': 2})
-my_new_config = my_config.get("my.new.configuration")
-
-
-# Or like this:
-my_config.set("new.config.server_address", "http://localhost:8000/")
-
-server_address = my_config.get("new.config.server_address")
-
-
+from tidyconf import Config, optional, ConfigError, KeyNotFoundError
 ```
+
+| API | Description |
+| --- | --- |
+| `Config(data=None)` | Create a config from a mapping (deep-copied). Handy in tests. |
+| `Config.load(*sources, env_prefix=None)` | Load and deep-merge files in order (later wins), then apply env overrides if `env_prefix` is given. No sources is allowed (env only / empty). |
+| `optional(path)` | Mark a source file as optional: skipped if it does not exist. |
+| `config.get(route, default=...)` | Value at a dotted route such as `"server.port"`. Returns a deep copy. Raises `KeyNotFoundError` if missing, unless `default` is given. |
+| `config[route]` | Same as `config.get(route)` without a default. |
+| `config.set(route, value)` | Set a value, creating intermediate sections as needed. Raises `TypeError` if a part of the route is not a mapping. |
+| `config.reset()` | Restore the state at construction / `load()` time. |
+| `config.to_dict()` | Deep copy of all data as a plain `dict`. |
+
+Because `get()` and `to_dict()` return copies, mutating a returned value never
+changes the config; use `set()` for that.
+
+File formats are chosen by suffix (case-insensitive): `.json`, `.toml`, `.yaml` / `.yml`.
+Files are read as UTF-8 and the top level must be a mapping. An empty YAML file
+counts as an empty mapping.
+
+### Errors
+
+| Exception | When |
+| --- | --- |
+| `ConfigError` | Unsupported file type, parse error, top level not a mapping, YAML file without PyYAML installed, invalid env override. |
+| `KeyNotFoundError` | Route not found in `get()` / `[]`. Subclass of both `ConfigError` and `KeyError`. |
+| `FileNotFoundError` | A required (non-`optional`) source file does not exist. |
+| `TypeError` | `set()` would have to go through a value that is not a mapping. |
+
+## Layering rules
+
+- Sources are merged left to right; later sources win.
+- If both sides have a mapping for the same key, they are merged recursively.
+  Any other value (including lists) is replaced as a whole, not combined.
+- Environment overrides are applied last, on top of the merged files.
+- `reset()` returns to this fully loaded state.
+
+## Environment variables
+
+With `env_prefix="MYAPP"`, every environment variable starting with `MYAPP_` is an
+override:
+
+- The prefix is matched case-insensitively.
+- The rest of the name is split on double underscores into a route:
+  `MYAPP_DATABASE__POOL_SIZE` sets `database.pool_size`. Single underscores are part
+  of the key.
+- Each part matches an existing key case-insensitively; a key that does not exist
+  yet is created in lower case.
+- Variables are applied in sorted order of their names.
+
+Values are converted based on the type of the value that already exists at that
+route:
+
+| Existing value | Env value | Result |
+| --- | --- | --- |
+| `bool` | `true` / `1` / `yes` / `on`, `false` / `0` / `no` / `off` (any case) | `True` / `False` |
+| `int` | `"9000"` | `9000` |
+| `float` | `"0.5"` | `0.5` |
+| `list` | JSON array, e.g. `'["search", "export"]'` | `["search", "export"]` |
+| mapping (section) | anything | `ConfigError`: a whole section cannot be overridden |
+| `str`, `None`, or missing | anything | the plain string |
+
+A value that cannot be converted raises `ConfigError` naming the environment
+variable, as does a route that runs through a non-mapping value.
+
+### Limitations
+
+- Keys containing `.` cannot be reached with dotted routes (no escaping).
+- Keys containing `.` or `-` cannot be set from environment variables: shells and
+  most tools do not allow those characters in variable names.
+- A key created from the environment (one not in any file) gets a lower-case name
+  and a plain string value.
+- An environment variable can only replace a single value, not a whole section or a
+  single list element.
+
+## Development
+
+See [CLAUDE.md](CLAUDE.md) for setup, tests, linting and project conventions.
+
+## License
+
+MIT, see [LICENSE](LICENSE).
