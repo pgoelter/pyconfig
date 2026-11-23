@@ -3,7 +3,7 @@ servers = ["alpha", "beta"]
 [app]
 name = "demo"
 debug = false
-owner = "Philipp Gölter"
+owner = "Team Grün"
 
 [database]
 host = "localhost"

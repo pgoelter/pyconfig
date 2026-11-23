@@ -9,7 +9,7 @@ from tidyconf import Config, ConfigError, optional
 RESOURCES = Path(__file__).parent / "resources"
 
 BASE: dict[str, Any] = {
-    "app": {"name": "demo", "debug": False, "owner": "Philipp Gölter"},
+    "app": {"name": "demo", "debug": False, "owner": "Team Grün"},
     "database": {"host": "localhost", "port": 5432, "timeout": 1.5},
     "servers": ["alpha", "beta"],
 }
@@ -25,7 +25,7 @@ def test_load_each_format(filename: str) -> None:
 def test_load_accepts_str_path() -> None:
     config = Config.load(str(RESOURCES / "base.json"))
 
-    assert config.get("app.owner") == "Philipp Gölter"
+    assert config.get("app.owner") == "Team Grün"
 
 
 @pytest.mark.parametrize(
@@ -52,7 +52,7 @@ def test_later_files_override_earlier() -> None:
     config = Config.load(RESOURCES / "base.json", RESOURCES / "override.yml")
 
     assert config.to_dict() == {
-        "app": {"name": "demo", "debug": True, "owner": "Philipp Gölter"},
+        "app": {"name": "demo", "debug": True, "owner": "Team Grün"},
         "database": {"host": "localhost", "port": 6543, "timeout": 1.5},
         "servers": ["gamma"],
     }
@@ -158,14 +158,14 @@ def test_empty_yaml_is_empty_config(tmp_path: Path) -> None:
 @pytest.mark.parametrize("suffix", [".json", ".toml", ".yaml"])
 def test_utf8_content(tmp_path: Path, suffix: str) -> None:
     content = {
-        ".json": '{"owner": "Gölter ✓"}',
-        ".toml": 'owner = "Gölter ✓"\n',
-        ".yaml": "owner: Gölter ✓\n",
+        ".json": '{"owner": "Grüße ✓"}',
+        ".toml": 'owner = "Grüße ✓"\n',
+        ".yaml": "owner: Grüße ✓\n",
     }[suffix]
     path = tmp_path / f"config{suffix}"
     path.write_bytes(content.encode("utf-8"))
 
-    assert Config.load(path).get("owner") == "Gölter ✓"
+    assert Config.load(path).get("owner") == "Grüße ✓"
 
 
 def test_yaml_without_pyyaml_raises(monkeypatch: pytest.MonkeyPatch) -> None:
