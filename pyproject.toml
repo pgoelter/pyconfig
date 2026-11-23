@@ -31,9 +31,9 @@ yaml = ["PyYAML>=6"]
 dev = ["pytest", "pytest-cov", "mypy", "ruff", "types-PyYAML", "PyYAML>=6"]
 
 [project.urls]
-Homepage = "https://github.com/pgoelter/pyconfig"
-Source = "https://github.com/pgoelter/pyconfig"
-Issues = "https://github.com/pgoelter/pyconfig/issues"
+Homepage = "https://github.com/pgoelter/tidyconf"
+Source = "https://github.com/pgoelter/tidyconf"
+Issues = "https://github.com/pgoelter/tidyconf/issues"
 
 [tool.hatch.version]
 path = "tidyconf/__init__.py"
