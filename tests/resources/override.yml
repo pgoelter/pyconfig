@@ -1,0 +1,6 @@
+app:
+  debug: true
+database:
+  port: 6543
+servers:
+  - gamma

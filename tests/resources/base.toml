@@ -1,0 +1,11 @@
+servers = ["alpha", "beta"]
+
+[app]
+name = "demo"
+debug = false
+owner = "Philipp Gölter"
+
+[database]
+host = "localhost"
+port = 5432
+timeout = 1.5
